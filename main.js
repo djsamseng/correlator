@@ -1,16 +1,48 @@
-const { app, BrowserWindow, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow;
 
 const ioHook = require("iohook");
 
+let sendToReact;
+
+ipcMain.on("start", (evt, args) => {
+  console.log("Starting ipc communication");
+  sendToReact = evt.reply;
+});
+
+let isRecording = false;
+ipcMain.on("startRecording", (evt, args) => {
+  isRecording = true;
+});
+
+ipcMain.on("stopRecording", (evt, args) => {
+  isRecording = false;
+  if (recording.length > 0) {
+    console.log("EVT:", recording[0]);
+    console.log("CORRESPONDS TO:", recording.slice(1));
+  }
+  recording = [];
+});
+
+let recording = [];
 ioHook.on("keyup", evt => {
-  console.warn("Keyup", evt);
+  if (sendToReact) {
+    sendToReact("message", "keyup");
+  }
+  if (isRecording) {
+    recording.push(evt);
+  }
 });
 
 ioHook.on("mouseup", evt => {
-  console.warn("mouse up:", evt);
+  if (sendToReact) {
+    sendToReact("message", "mouseup");
+  }
+  if (isRecording) {
+    recording.push(evt);
+  }
 });
 
 ioHook.start();
